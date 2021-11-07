@@ -34,8 +34,8 @@ try:
     STORAGE_SPACE_MAX = 1000                                            # 최대 보관공간 크기
 
     # Create variables: 의사결정변수
-    prod_type_week = m.addVars(TYPE, len(WEEK_ARR), vtype=GRB.INTEGER, lb=0, name='prod_type_week')     # 유형, 주별 생산량
-    stock_type_week = m.addVars(TYPE, len(WEEK_ARR), vtype=GRB.INTEGER, lb=0, name='stock_type_week')   # 유형, 주별 재고수량
+    prod_type_week = m.addVars(TYPE, len(WEEK_ARR), vtype=GRB.CONTINUOUS, lb=0, name='prod_type_week')     # 유형, 주별 생산량
+    stock_type_week = m.addVars(TYPE, len(WEEK_ARR), vtype=GRB.CONTINUOUS, lb=0, name='stock_type_week')   # 유형, 주별 재고수량
 
     # Add constraint: 재고수량 제약 (당월 재고수량 = 전월 or 기초 재고수량 + 당월 생산량 - 당월 수요량)
     m.addConstrs(
