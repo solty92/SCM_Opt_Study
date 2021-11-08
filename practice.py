@@ -28,3 +28,4 @@ for i in PROD_RED:
 
 RED_COMP_COST_TOTAL = cost * 3000
 print('RED PROD COST : €', RED_COMP_COST_TOTAL)
+

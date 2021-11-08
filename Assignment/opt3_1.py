@@ -3,7 +3,6 @@ from gurobipy import GRB, quicksum
 import pandas as pd
 from IPython.display import display
 
-# 외주를 맡길때도 부품은 사야한다고 가정할 때
 try:
 
     # Create a new model
@@ -28,8 +27,15 @@ try:
     PRICE_ARR = (0.3, 1, 0.2, 0.8, 2.75, 0.1, 0.29, 2.6, 3, 1.65, 1.65, 0.15)
 
     # 고정 조립 비용 (3000개씩)
-    BLUE_LORRY = 2.2 * 3000
-    RED_LORRY = 2.6 * 3000
+    BLUE_LORRY_COST = 2.2 * 3000
+    RED_LORRY_COST = 2.6 * 3000
+
+    # 고정 부품 비용
+    BLUE_CONTAINER_COST = COMP_ARR['blue container'] * 3000
+    RED_TANK_COST = COMP_ARR['red tank'] * 3000
+    BLUE_MOTOR_COST = COMP_ARR['blue motor'] * 3000
+    RED_MOTOR_COST = COMP_ARR['red motor'] * 3000
+    HEADLIGHT_COST = COMP_ARR['headlight'] * 6000
 
     # 부품별 필요 갯수 (색깔 구분없이 1대당)
     COMP_COUNT_ARR = (4, 2, 2, 1, 1, 2, 1, 1, 1, 1, 1, 2)
@@ -37,18 +43,6 @@ try:
     # 제품별 필요 부품 인덱스값
     PROD_BLUE = (0, 1, 2, 3, 4, 5, 6, 7, 9, 11)
     PROD_RED = (0, 1, 2, 3, 4, 5, 6, 8, 10, 11)
-
-    # 파랑 트럭 부품가격 합
-    cost = 0
-    for i in PROD_BLUE:
-        cost += PRICE_ARR[i] * COMP_COUNT_ARR[i]
-    BLUE_COMP_COST_TOTAL = cost * 3000
-
-    # 빨강 트럭 부품가격 합
-    cost = 0
-    for i in PROD_RED:
-        cost += PRICE_ARR[i] * COMP_COUNT_ARR[i]
-    RED_COMP_COST_TOTAL = cost * 3000
 
     # Create variables: 의사결정변수
     axle = m.addVar(lb=0, ub=600, vtype=GRB.CONTINUOUS, name="axle")                        # axle 조립 횟수 (최저 0, 최고 3000)
@@ -61,19 +55,27 @@ try:
     SUB_ASSEM_CABIN = 6000 - assem_cabin
 
     SUB_PRICE_ARR = (12.75, 30, 3)  # Axle, Assembled chassis, Assembled cabin 외주비용
-    MINORETTE_PRICE_ARR = (6.8, 3.55, 3.2)
+
+    # 부품별 자체조립 비용
+    MINORETTE_PRICE_ARR = (6.8 + (PRICE_ARR[COMP_ARR["wheel"]] * 2) + PRICE_ARR[COMP_ARR["steel bar"]]
+                           , 3.55 + (PRICE_ARR[COMP_ARR["bumper"]] * 2) + PRICE_ARR[COMP_ARR["chassis"]]
+                           , 3.2 + PRICE_ARR[COMP_ARR["cabin"]] + (PRICE_ARR[COMP_ARR["door window"]] * 2) + PRICE_ARR[COMP_ARR["windscreen"]])
+
+    # Add constraint: Axle 조립가능 갯수 제약
+    m.addConstr(axle <= 2 * assem_chassis, name="ca")
 
     # Set objective: 목적함수(Minimize 총비용 = 자체조립비용 + 부품비용 + 외주비용)
     m.setObjective(
         axle * MINORETTE_PRICE_ARR[0] + assem_chassis * MINORETTE_PRICE_ARR[1] + assem_cabin * MINORETTE_PRICE_ARR[2]
-        + BLUE_LORRY + RED_LORRY + BLUE_COMP_COST_TOTAL + RED_COMP_COST_TOTAL
+        + BLUE_LORRY_COST + RED_LORRY_COST + BLUE_CONTAINER_COST + RED_TANK_COST + BLUE_MOTOR_COST + RED_MOTOR_COST + HEADLIGHT_COST
         + SUB_AXLE * SUB_PRICE_ARR[0] + SUB_ASSEM_CHASSIS * SUB_PRICE_ARR[1] + SUB_ASSEM_CABIN * SUB_PRICE_ARR[2]
         , GRB.MINIMIZE)
+
 
     # Optimize model
     m.optimize()
 
-    # 변수 값 출력
+    # DataFrame 만들기(생산량)
     print('--------------------------------------------------------------------------')
     for v in m.getVars():
         print('%s %g' % (v.varName, v.x))
