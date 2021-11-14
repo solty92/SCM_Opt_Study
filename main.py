@@ -1,63 +1,113 @@
-import gurobipy as gp
-from gurobipy import GRB
+# 조립 설계도
+ASSEMBLY_BLUEPRINT = {
+    'axle': {
+        'wheel': 2,
+        'steel bar': 1
+    },
+    'assembled chassis': {
+        'bumper': 2,
+        'axle': 2,
+        'chassis': 1
+    },
+    'assembled cabin': {
+        'cabin': 1,
+        'door window': 2,
+        'windscreen': 1
+    },
+    'blue lorry': {
+        'assembled chassis': 1,
+        'blue container': 1,
+        'assembled cabin': 1,
+        'blue motor': 1,
+        'headlight': 2
+    },
+    'red lorry': {
+        'assembled chassis': 1,
+        'red tank': 1,
+        'assembled cabin': 1,
+        'red motor': 1,
+        'headlight': 2
+    }
+}
+
+# 부품, 조립품 구매가격
+COMP_PRICE = {'wheel': 0.3
+              , 'steel bar': 1
+              , 'bumper': 0.2
+              , 'chassis': 0.8
+              , 'cabin': 2.75
+              , 'door window': 0.1
+              , 'windscreen': 0.29
+              , 'blue container': 2.6
+              , 'red tank': 3
+              , 'blue motor': 1.65
+              , 'red motor': 1.65
+              , 'headlight': 0.15
+              , 'axle': 12.75
+              , 'assembled chassis': 30
+              , 'assembled cabin': 3
+              }
+
+# 조립비용
+ASSEM_COST = {
+    'axle': 6.8
+    , 'assembled chassis': 3.55
+    , 'assembled cabin': 3.2
+    , 'blue lorry': 2.2
+    , 'red lorry': 2.6
+}
+
+# 최대 조립 가능 개수
+ASSEM_CAPA = {
+    'axle': 600
+    , 'assembled chassis': 4000
+    , 'assembled cabin': 3000
+    , 'blue lorry': 4000
+    , 'red lorry': 5000
+}
+
+# 예측수요량
+SF = {
+    'blue lorry': 3000
+    , 'red lorry': 3000
+}
+
+# # 파랑 만들 때 가격 (외주)
+# blue_sum = 0
+# for i in ASSEMBLY_BLUEPRINT['blue lorry']:
+#     print(i)            # assembled chassis, blue container, assembled cabin, blue motor, headlight
+#     print('--COMP_PRICE[i] * ASSEMBLY_BLUEPRINT["blue lorry"][i] :', COMP_PRICE[i], '*', ASSEMBLY_BLUEPRINT['blue lorry'][i])
+#     blue_sum += COMP_PRICE[i] * ASSEMBLY_BLUEPRINT['blue lorry'][i]
+#
+# # 최종 조립비용
+# blue_sum += ASSEM_COST['blue lorry']
+#
+# # 3000대
+# blue_sum *= SF['blue lorry']
+#
+# print('blue_sum :', blue_sum)
+#
+#
+# # 빨강 만들 때 가격 (외주)
+# red_sum = 0
+# for i in ASSEMBLY_BLUEPRINT['red lorry']:
+#     print(i)            # assembled chassis, red tank, assembled cabin, red motor, headlight
+#     print("--COMP_PRICE[i] * ASSEMBLY_BLUEPRINT['red lorry'][i] :", COMP_PRICE[i], '*', ASSEMBLY_BLUEPRINT['red lorry'][i])
+#     red_sum += COMP_PRICE[i] * ASSEMBLY_BLUEPRINT['red lorry'][i]
+#
+# # 최종 조립비용
+# red_sum += ASSEM_COST['red lorry']
+#
+# # 3000대
+# red_sum *= SF['red lorry']
+#
+# print('red_sum :', red_sum)
 
 
-# 변수들의 값을 더해주는 함수
-def func_sum(a):
-    sum_a = 0
-    for i in range(12):
-        sum_a += a[i]
-    return sum_a
-
-
-try:
-
-    # Create a new model
-    m = gp.Model("bicycle")
-
-    # Create variables: 일반변수
-    MONTH = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]  # 1~12월 배열
-    SALE_ARR = [30000, 15000, 15000, 25000, 33000, 40000, 45000, 45000, 26000, 14000, 25000, 30000]  # 월별 수요예측량
-
-    NORM_COST = 32  # 기본생산비용
-    OVER_COST = 40  # 초과생산비용
-    STOCK_COST = 5  # 재고비용
-    NORM_PROD_CAPA = 30000  # 최대 기본생산량
-    OVER_PROD_RATE = 0.5  # 기본생산량 대비 가능한 초과근무생산량 비율
-    INIT_STOCK = 2000  # 기초재고
-
-    # Create variables: 의사결정변수
-    x = m.addVars(12, vtype=GRB.INTEGER, lb=0, name='x')  # 월별 기본생산량
-
-    y = m.addVars(12, vtype=GRB.INTEGER, lb=0, name='y')  # 월별 초과생산량
-
-    s = m.addVars(12, vtype=GRB.INTEGER, lb=0, name='s')  # 월별 재고량
-
-    saleArr = [30000, 15000, 15000, 25000, 33000, 40000, 45000, 45000, 26000, 14000, 25000, 30000]
-
-    # Add constraint: 당월재고량 = 전월재고량 + 당월기본생산량 + 당월초과생산량 - 당월수요량
-    m.addConstr(s[0] == 2000 + x[0] + y[0] - saleArr[0], name='ca')  # 1월 재고량
-
-    m.addConstrs((s[i] == s[i - 1] + x[i] + y[i] - saleArr[i] for i in range(1, 12)), name="cb")  # 2~12월 재고량
-
-    # Add constraint: 생산량 제약조건
-    m.addConstrs((x[i] <= 30000 for i in range(12)), name='cc')  # 월 기본생산량 범위
-
-    m.addConstrs((y[i] <= 15000 for i in range(12)), name='cd')  # 월 초과생산량 범위
-
-    # Set objective: 목적함수(Minimize Z = x + y + s)
-    m.setObjective(32 * (func_sum(x)) + 40 * (func_sum(y)) + 5 * (func_sum(s)), GRB.MINIMIZE)
-
-    # Optimize model
-    m.optimize()
-
-    for v in m.getVars():
-        print('%s %g' % (v.varName, v.x))
-
-    print('Obj: €%i' % m.objVal)
-
-except gp.GurobiError as e:
-    print('Error code ' + str(e.errno) + ': ' + str(e))
-
-except AttributeError:
-    print('Encountered an attribute error')
+# 파랑 만들 때 가격 (조립)
+cnt = 1500
+# 고정 부품 먼저
+blue_assem_sum = COMP_PRICE['blue container'] * ASSEMBLY_BLUEPRINT['blue lorry']['blue container'] \
+                 + COMP_PRICE['blue motor'] * ASSEMBLY_BLUEPRINT['blue lorry']['blue motor'] \
+                 + COMP_PRICE['headlight'] * ASSEMBLY_BLUEPRINT['blue lorry']['headlight'] \
+                 + COMP_PRICE['assembled cabin'] * ASSEMBLY_BLUEPRINT['blue lorry']
