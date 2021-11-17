@@ -1,5 +1,3 @@
-import math
-
 import gurobipy as gp
 from gurobipy import GRB, quicksum
 
@@ -16,7 +14,7 @@ try:
     WAGON_WEIGHT_AVG = 0    # 화물 기차 평균 중량 선언
 
     # Create variables: 의사결정변수
-    wagon_load = m.addVars(MAX_WAGON_CNT, len(BOX_WEIGHT), vtype=GRB.BINARY, lb=0, ub=1, name='wagon_load')      # 각 화물이 어떤 박스를 실을지 말지 결정 (1: 싣는다)
+    wagon_load = m.addVars(MAX_WAGON_CNT, len(BOX_WEIGHT), vtype=GRB.BINARY, lb=0, ub=1, name='wagon_load')      # 각 화물이 어떤 박스를 실을지 말지 결정 (1: 싣는다, 0: No)
 
 
     # Add constraint: 각 화물 기차에 실은 무게 <= MAX_CAPA(100)
@@ -25,10 +23,8 @@ try:
     # Add constraint: 각 박스는 1개씩만 존재 (중복해서 싣거나, 안 실을 수 없다)
     m.addConstrs( quicksum( wagon_load[i, j] for i in range(MAX_WAGON_CNT) ) == 1 for j in range(len(BOX_WEIGHT)) )
 
+
     # Set objective: 목적함수(Minimize 표준편차)
-    # WAGON1_SUM = sum( wagon_load[0, j] * BOX_WEIGHT[j] for j in range(len(BOX_WEIGHT)) )
-    # WAGON2_SUM = sum( wagon_load[1, j] * BOX_WEIGHT[j] for j in range(len(BOX_WEIGHT)) )
-    # WAGON3_SUM = sum( wagon_load[2, j] * BOX_WEIGHT[j] for j in range(len(BOX_WEIGHT)) )
     WAGON_WEIGHT = [0 for i in range(MAX_WAGON_CNT)]        # 각 WAGON의 무게를 담는 리스트 선언
 
     # 각 WAGON의 무게를 배열에 담는다
@@ -52,46 +48,52 @@ try:
     # 표준편차를 구한다
     # STANDARD_DEVIATION = math.sqrt(VARIANCE)
 
-    m.setObjective( VARIANCE, GRB.MINIMIZE)
+    m.setObjective( VARIANCE, GRB.MINIMIZE )
 
     # Optimize model
     m.optimize()
 
-    print('----------------------')
+    print('Result -------------------------------------------------------------------')
 
-    # 결정변수 값들 배열에 담기 (DataFrame 용도)
+    # 결정변수 값들 배열에 담기
     tmpList = [[0 for i in range(16)] for j in range(3)]
-    # tmpList = [[]]
     idx = 0
     for v in m.getVars():
         aa = int(idx / 16)
-        print('%s : %g' % (v.varName, v.x))
+        # print('%s : %g' % (v.varName, v.x))
         tmpList[aa][idx % 16] = v.x
         idx += 1
 
-    print(tmpList[0])
-    print( sum( tmpList[0][j] * BOX_WEIGHT[j] for j in range(len(BOX_WEIGHT)) ) )
-    print(tmpList[1])
-    print( sum( tmpList[1][j] * BOX_WEIGHT[j] for j in range(len(BOX_WEIGHT)) ) )
-    print(tmpList[2])
-    print( sum( tmpList[2][j] * BOX_WEIGHT[j] for j in range(len(BOX_WEIGHT)) ) )
+    WAGON1 = []
+    WAGON2 = []
+    WAGON3 = []
 
+    print('WAGON 1 --------------------')
+    for i in range(len(BOX_WEIGHT)):
+        if tmpList[0][i] == 1.0:
+            WAGON1.append(i + 1)
+    print('Box number :', WAGON1)
+    print('Weight :', sum( tmpList[0][j] * BOX_WEIGHT[j] for j in range(len(BOX_WEIGHT)) ), 'quintals' )
+    print()
 
-    # norm_prod_arr = []
-    # for v in wagon_load.values():
-    #     norm_prod_arr.append(int(v.X))
+    print('WAGON 2 --------------------')
+    for i in range(len(BOX_WEIGHT)):
+        if tmpList[1][i] == 1.0:
+            WAGON2.append(i + 1)
+    print('Box number :', WAGON2)
+    print('Weight :', sum( tmpList[1][j] * BOX_WEIGHT[j] for j in range(len(BOX_WEIGHT)) ), 'quintals' )
+    print()
 
-    # DataFrame 만들기
-    # print('--------------------------------------------------------------------------')
-    # df = pd.DataFrame({'norm_prod': norm_prod_arr,
-    #                    'over_prod': over_prod_arr,
-    #                    'stock': stock_arr})
-    # df.index = MONTH
-    # display(df)
-    # print('--------------------------------------------------------------------------')
+    print('WAGON 3 --------------------')
+    for i in range(len(BOX_WEIGHT)):
+        if tmpList[2][i] == 1.0:
+            WAGON3.append(i + 1)
+    print('Box number :', WAGON3)
+    print('Weight :', sum( tmpList[2][j] * BOX_WEIGHT[j] for j in range(len(BOX_WEIGHT)) ), 'quintals' )
 
     # 결과
-    print('Objective Value : %i' % m.objVal)
+    print('--------------------------------------------------------------------------')
+    print('Objective Value : %f' % m.objVal)
     print('--------------------------------------------------------------------------')
 
 
