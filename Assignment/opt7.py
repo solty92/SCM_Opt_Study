@@ -58,7 +58,6 @@ try:
     idx = 0
     for v in m.getVars():
         aa = int(idx / 16)
-        # print('%s : %g' % (v.varName, v.x))
         tmpList[aa][idx % 16] = v.x
         idx += 1
 
