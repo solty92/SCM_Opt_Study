@@ -8,12 +8,4 @@ wagon_load = [
 
 print(sum( wagon_load[0][j] * BOX_WEIGHT[j] for j in range(len(BOX_WEIGHT)) ) )
 
-print(wagon_load[0][0])
-print(wagon_load[0][1])
-print(wagon_load[0][2])
-print(wagon_load[0][3])
-print(wagon_load[0][4])
-print(wagon_load[0][5])
-print(wagon_load[0][6])
-print(wagon_load[0][7])
-print(wagon_load[0][8])
+print(wagon_load)
