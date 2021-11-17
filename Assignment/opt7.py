@@ -8,10 +8,8 @@ try:
 
     # Create variables: 일반변수
     BOX_WEIGHT = (34, 6, 8, 17, 16, 5, 13, 21, 25, 31, 14, 13, 33, 9, 25, 25)       # 박스당 무게
-
     MAX_WAGON_CNT = 3       # 화물 기차 수
     MAX_CAPA = 100          # 화물 기차 당 최대 가용 중량
-    WAGON_WEIGHT_AVG = 0    # 화물 기차 평균 중량 선언
 
     # Create variables: 의사결정변수
     wagon_load = m.addVars(MAX_WAGON_CNT, len(BOX_WEIGHT), vtype=GRB.BINARY, lb=0, ub=1, name='wagon_load')      # 각 화물이 어떤 박스를 실을지 말지 결정 (1: 싣는다, 0: No)
@@ -24,7 +22,7 @@ try:
     m.addConstrs( quicksum( wagon_load[i, j] for i in range(MAX_WAGON_CNT) ) == 1 for j in range(len(BOX_WEIGHT)) )
 
 
-    # Set objective: 목적함수(Minimize 표준편차)
+    # Set objective: 목적함수(Minimize 표준편차 를 하려 했으나 분산으로)
     WAGON_WEIGHT = [0 for i in range(MAX_WAGON_CNT)]        # 각 WAGON의 무게를 담는 리스트 선언
 
     # 각 WAGON의 무게를 배열에 담는다
@@ -55,7 +53,7 @@ try:
 
     print('Result -------------------------------------------------------------------')
 
-    # 결정변수 값들 배열에 담기
+    # 결과 출력
     tmpList = [[0 for i in range(16)] for j in range(3)]
     idx = 0
     for v in m.getVars():
