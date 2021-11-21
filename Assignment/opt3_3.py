@@ -130,7 +130,7 @@ try:
     m.addConstr(assem[1] + subcontract[1] >= SF[bl] + SF[rl], name='')
     m.addConstr(assem[2] + subcontract[2] >= SF[bl] + SF[rl], name='')
 
-    # Set objective: Minimize 생산cost (부품비용, 조립비용, 구매비용)
+    # Set objective: Minimize 생산cost (부품비용 + 조립비용 + 구매비용)
     obj = 0
 
     # 자체조립비용
@@ -167,7 +167,7 @@ try:
             subResult.append(v.x)
         idx += 1
 
-    # DataFrame 만들기
+    # 결과 출력
     print('--------------------------------------------------------------------------')
     print('- assem count')
     for i in range(len(assemResult)):
